@@ -6,34 +6,37 @@
 #define C_PRIMER_MYARRAY_HPP
 
 
-#include <iostream>
-using namespace std;
+#include <memory>
+#include <stdexcept>
+#include <utility>
 
 template <class T>
 class MyArray
 {
 private:
-    T *pAddress;        //指针
+    std::unique_ptr<T[]> pAddress;
     int m_Capacity;
     int m_Size;
-public:
-    MyArray(int capacity)
+
+    void swap(MyArray &other) noexcept
     {
-        //cout << "MyArray 有参构造调用" << endl;
-        this->m_Capacity = capacity;
-        this->m_Size = 0;
-        this->pAddress = new T[this->m_Capacity];
+        pAddress.swap(other.pAddress);
+        std::swap(m_Capacity, other.m_Capacity);
+        std::swap(m_Size, other.m_Size);
+    }
+public:
+    MyArray(int capacity) : m_Capacity(capacity), m_Size(0)
+    {
+        if (capacity < 0)
+            throw std::invalid_argument("MyArray capacity must be nonnegative");
+        pAddress.reset(new T[capacity]);
     }
 
 
     MyArray(const MyArray & arr)
+        : pAddress(new T[arr.m_Capacity]), m_Capacity(arr.m_Capacity), m_Size(arr.m_Size)
     {
-        //cout << "MyArray 复制构造调用" << endl;
-        this->m_Size = arr.m_Size;
-        this->m_Capacity = arr.m_Capacity;
-
-        this->pAddress = new T[arr.m_Capacity];
-
+        // RAII also releases the new array if an element assignment throws.
         for (int i = 0; i < this->m_Size; ++i) {
             this->pAddress[i] = arr.pAddress[i];
         }
@@ -41,22 +44,10 @@ public:
 
     MyArray &operator=(const MyArray & arr)
     {
-        //cout << "MyArray opeartor=调用" << endl;
-        if (this->pAddress != nullptr)
+        if (this != &arr)
         {
-            delete[] this->pAddress;
-            this->pAddress = nullptr;
-            this->m_Size = 0;
-            this->m_Capacity = 0;
-        }
-
-        this->m_Size = arr.m_Size;
-        this->m_Capacity = arr.m_Capacity;
-
-        this->pAddress = new T[arr.m_Capacity];
-
-        for (int i = 0; i < this->m_Size; ++i) {
-            this->pAddress[i] = arr.pAddress[i];
+            MyArray copy(arr);
+            swap(copy); // Commit only after every element has been copied.
         }
 
         return *this;
@@ -85,26 +76,22 @@ public:
         return this->pAddress[index];
     }
 
+    const T & operator[](int index) const
+    {
+        return this->pAddress[index];
+    }
 
-    int getCapacity()
+    int getCapacity() const noexcept
     {
         return this->m_Capacity;
     }
 
-    int getSize()
+    int getSize() const noexcept
     {
         return this->m_Size;
     }
 
-    ~MyArray()
-    {
-        if (this->pAddress != nullptr)
-        {
-            //cout << "MyArray 析构调用" << endl;
-            delete [] this->pAddress;
-            this->pAddress = nullptr;
-        }
-    }
+    ~MyArray() = default;
 };
 
 #endif //C_PRIMER_MYARRAY_HPP
