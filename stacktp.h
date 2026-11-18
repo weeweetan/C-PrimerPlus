@@ -39,7 +39,8 @@ template <class Type>
 bool Stack<Type>::push(const Type &item) {
     if (top < MAX)
     {
-        items[top++] = item;
+        items[top] = item;
+        ++top; // Count the element only after assignment succeeds.
         return true;
     }
     else
@@ -50,7 +51,8 @@ template <class Type>
 bool Stack<Type>::pop(Type &item) {
     if (top > 0)
     {
-        item = items[--top];
+        item = items[top - 1];
+        --top; // Keep the top element available if assignment throws.
         return true;
     }
     else

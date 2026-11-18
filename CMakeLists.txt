@@ -25,6 +25,13 @@ endif()
 add_executable(useMyArray useMyArray.cpp)
 target_link_libraries(useMyArray PRIVATE myarray)
 
+add_library(template_stack INTERFACE)
+target_include_directories(template_stack INTERFACE "${PROJECT_SOURCE_DIR}")
+target_link_libraries(template_stack INTERFACE project_options)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(template_stack INTERFACE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 include(CTest)
 if(BUILD_TESTING)
     add_executable(test_myarray tests/test_myarray.cpp)
@@ -32,6 +39,14 @@ if(BUILD_TESTING)
     foreach(case basic copy self-assignment copy-construction-failure assignment-failure default-construction-failure append-failure)
         add_test(NAME myarray-${case} COMMAND test_myarray ${case})
         set_tests_properties(myarray-${case} PROPERTIES TIMEOUT 10
+            FAIL_REGULAR_EXPRESSION "AddressSanitizer;UndefinedBehaviorSanitizer;runtime error:;LeakSanitizer")
+    endforeach()
+
+    add_executable(test_stack tests/test_stack.cpp)
+    target_link_libraries(test_stack PRIVATE template_stack)
+    foreach(case basic push-failure pop-failure model)
+        add_test(NAME stack-${case} COMMAND test_stack ${case})
+        set_tests_properties(stack-${case} PROPERTIES TIMEOUT 10
             FAIL_REGULAR_EXPRESSION "AddressSanitizer;UndefinedBehaviorSanitizer;runtime error:;LeakSanitizer")
     endforeach()
 endif()
