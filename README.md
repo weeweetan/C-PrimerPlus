@@ -1,6 +1,6 @@
 # C-PrimerPlus
 
-《C++ Primer Plus》与 C++ 基础练习代码，保留原来的章节文件名。目前已验证 `MyArray` 的资源所有权和复制行为，以及模板栈的边界和异常处理；其他章节暂未逐一纳入验证。
+《C++ Primer Plus》与 C++ 基础练习代码，保留原来的章节文件名。目前已验证 `MyArray` 的复制与生命周期、模板栈的边界，以及 DMA 类赋值的分配失败路径；其他章节暂未逐一纳入验证。
 
 ## 构建与运行
 
@@ -21,6 +21,8 @@ ctest --test-dir build --output-on-failure
 | `useMyArray` | [useMyArray.cpp](useMyArray.cpp) | 插入、深复制和自赋值演示 |
 | `test_myarray` | [tests/test_myarray.cpp](tests/test_myarray.cpp) | 复制与异常路径回归检查 |
 | `test_stack` | [tests/test_stack.cpp](tests/test_stack.cpp) | 模板栈的边界、后进先出与赋值异常回归检查 |
+| `useDMA` | [usedma.cpp](usedma.cpp) | 运行 DMA 类继承与复制演示 |
+| `test_dma` | [tests/test_dma.cpp](tests/test_dma.cpp) | `baseDMA` 与 `hasDMA` 赋值时的资源所有权和分配失败回归 |
 
 默认开启 `BUILD_TESTING`，不需要 Python 或第三方库。日常生成的 `build*/` 目录已忽略；既有历史构建产物本轮未清理。
 
@@ -45,12 +47,17 @@ ctest --test-dir build --output-on-failure
 
 栈满时 `push()` 返回 `false`，栈空时 `pop()` 返回 `false`，两者均不尝试赋值。弹出只减少逻辑数量，槽位在栈对象销毁时才析构。
 
+## DMA 类的赋值异常
+
+[dma.cpp](dma.cpp) 中的 `baseDMA` 和 `hasDMA` 都拥有动态分配的字符数组。赋值现在先准备新数组，再替换旧数组；`hasDMA` 在修改基类部分前准备好自己的 `style`。如果任一次分配抛出 `std::bad_alloc`，目标对象仍保持原来的标签、评分和样式，可以继续使用或重新赋值。回归测试分别让基类分配、派生类样式分配以及派生类赋值中的基类分配失败，并检查源对象和目标对象的内容。
+
 ## 验证
 
-11 组 CTest 包括：
+15 组 CTest 包括：
 
 - `MyArray` 的 7 组回归：容量边界、深复制与链式赋值、自赋值、复制构造异常后的资源回收、赋值失败时原值不变、元素默认构造失败、插入失败后的大小与重试。
 - 模板栈的 4 组回归：空/满边界与后进先出、在不同深度插入失败后重试、在不同深度弹出失败后重试，以及与 `std::vector` 对照的 5,000 次入栈/出栈操作。异常用例使用会先修改目标再抛出的元素赋值，空/满拒绝路径也检查不会触发赋值。
+- DMA 类的 4 组回归：普通复制与自赋值，以及上述三种分配失败后的原值保留和重试。
 
 测试断言在 Release 构建中也生效。
 

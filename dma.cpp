@@ -4,6 +4,7 @@
 
 #include "dma.h"
 #include <cstring>
+#include <memory>
 
 baseDMA::baseDMA(const char *l, int r) {
     label = new char[std::strlen(l) + 1];
@@ -24,9 +25,10 @@ baseDMA::~baseDMA() {
 baseDMA & baseDMA::operator=(const baseDMA &rs) {
     if (this ==  & rs)
         return *this;
+    std::unique_ptr<char[]> replacement(new char[std::strlen(rs.label) + 1]);
+    std::strcpy(replacement.get(), rs.label);
     delete[] label;
-    label = new char[std::strlen(rs.label) + 1];
-    std::strcpy(label, rs.label);
+    label = replacement.release();
     rating = rs.rating;
     return *this;
 }
@@ -77,10 +79,11 @@ hasDMA::~hasDMA() {
 hasDMA& hasDMA::operator=(const hasDMA &hs) {
     if (this == &hs)
         return *this;
+    std::unique_ptr<char[]> replacement(new char[std::strlen(hs.style) + 1]);
+    std::strcpy(replacement.get(), hs.style);
     baseDMA::operator=(hs);
     delete[] style;
-    style = new char[std::strlen(hs.style) + 1];
-    std::strcpy(style, hs.style);
+    style = replacement.release();
     return *this;
 }
 
